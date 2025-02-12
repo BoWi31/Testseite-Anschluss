@@ -75,9 +75,8 @@
 
             if (nextSession) {
                 let formattedTime = nextSession.time.toLocaleString('de-DE', { weekday: 'long', hour: '2-digit', minute: '2-digit' });
-                let studentList = formatStudents(nextSession.students);
                 
-                let nextSessionText = `<h2>Nächste AF</h2><p><strong>Gruppe:</strong> ${nextSession.group}</p><p><strong>Lehrkraft:</strong> ${nextSession.teacher}</p><p><strong>Zeit:</strong> ${formattedTime}</p>${studentList}`;
+                let nextSessionText = `<h2>Nächste AF</h2><p><strong>Gruppe:</strong> ${nextSession.group}</p><p><strong>Lehrkraft:</strong> ${nextSession.teacher}</p><p><strong>Zeit:</strong> ${formattedTime}</p>`;
 
                 button.innerText = `Nächste AF: ${formattedTime}`;
                 button.style.display = "block";
@@ -91,21 +90,14 @@
         }
 
         function formatStudents(students) {
-            let sortedByClass = {};
-            students.forEach(student => {
-                let classNumber = student.match(/\d+/)[0];  
-                if (!sortedByClass[classNumber]) sortedByClass[classNumber] = [];
-                sortedByClass[classNumber].push(student);
-            });
+            return "<h3>Schüler:innen</h3><ul>" + students.map(student => `<li>${student}</li>`).join("") + "</ul>";
+        }
 
-            let output = "<h3>Schüler:innen</h3>";
-            Object.keys(sortedByClass).sort().forEach(classNumber => {
-                output += `<h4>${classNumber}. Klasse</h4><ul>`;
-                sortedByClass[classNumber].forEach(student => output += `<li>${student}</li>`);
-                output += "</ul>";
-            });
-
-            return output;
+        function showNextSessionDetails() {
+            if (nextSession) {
+                let studentsHtml = formatStudents(nextSession.students);
+                document.getElementById("groupInfo").innerHTML = studentsHtml;
+            }
         }
 
         function toggleOverview() {
@@ -114,8 +106,9 @@
 
             if (isOverviewShown) {
                 isOverviewShown = false;
-                checkSessionStatus();
+                groupInfo.innerHTML = "";
                 button.innerText = "Übersicht";
+                checkSessionStatus();
             } else {
                 isOverviewShown = true;
                 let overviewText = "<h2>Übersicht aller Gruppen</h2>";
@@ -133,6 +126,7 @@
             }
         }
 
+        document.getElementById("nextSessionBtn").addEventListener("click", showNextSessionDetails);
         document.getElementById("overviewBtn").addEventListener("click", toggleOverview);
         checkSessionStatus();
         setInterval(checkSessionStatus, 5000);
