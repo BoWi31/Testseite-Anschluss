@@ -37,7 +37,6 @@
             font-size: 18px;
             font-weight: bold;
             color: white;
-            background-color: red;
             padding: 12px;
             margin: 10px auto;
             width: 90%;
@@ -113,7 +112,6 @@
             ], students: ["Alle Sprachjongleure"] }
         ];
 
-        let nextSession = null;
         let activeSession = null;
         let warningMode = false;
 
@@ -140,8 +138,6 @@
                         currentSession = { teacher: group.teacher, group: group.group, students: group.students };
                     } else if (now >= warningTime && now < sessionStart) {
                         upcomingSession = { teacher: group.teacher, group: group.group };
-                    } else if (sessionStart > now && (!nextSession || sessionStart < nextSession.time)) {
-                        nextSession = { teacher: group.teacher, time: sessionStart, group: group.group };
                     }
                 });
             });
@@ -158,14 +154,16 @@
         function activateSession(session) {
             document.body.style.animation = "pulseRed 3s infinite";
             document.getElementById("alertBox").style.display = "block";
+            document.getElementById("alertBox").innerText = "Anschlussförderung aktiv!";
             document.getElementById("mainTitle").style.display = "none";
             document.getElementById("groupInfo").innerHTML = `<h2>Lehrkraft: ${session.teacher}</h2><p><strong>Schüler:innen:</strong> ${session.students.join(", ")}</p>`;
         }
 
         function activateWarning(session) {
             document.body.style.animation = "pulseYellow 3s infinite";
-            document.getElementById("alertBox").innerText = "Achtung: Gleich Anschlussförderung!";
             document.getElementById("alertBox").style.display = "block";
+            document.getElementById("alertBox").innerText = "Achtung: Gleich Anschlussförderung!";
+            document.getElementById("groupInfo").innerHTML = `<h2>Baldige Gruppe: ${session.group} (Lehrkraft: ${session.teacher})</h2>`;
         }
 
         function deactivateSession() {
@@ -176,7 +174,7 @@
         }
 
         checkSessionStatus();
-        setInterval(checkSessionStatus, 60000);
+        setInterval(checkSessionStatus, 1000);
     </script>
 </body>
 </html>
