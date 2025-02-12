@@ -9,12 +9,13 @@
             font-family: Arial, sans-serif;
             text-align: center;
             transition: background-color 1s ease-in-out;
-            animation: pulseGreen 3s infinite;
             margin: 0;
             padding: 10px;
         }
 
         @keyframes pulseGreen { 0% { background-color: #5cb85c; } 50% { background-color: #4cae4c; } 100% { background-color: #5cb85c; } }
+        @keyframes pulseYellow { 0% { background-color: #ffcc00; } 50% { background-color: #ffdb4d; } 100% { background-color: #ffcc00; } }
+        @keyframes pulseRed { 0% { background-color: #ff6961; } 50% { background-color: #ff8782; } 100% { background-color: #ff6961; } }
 
         .btn { font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #007bff, #0056b3); color: white; border: none; padding: 12px; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 10px; cursor: pointer; transition: opacity 0.3s; }
         .btn:hover { opacity: 0.8; }
@@ -48,86 +49,55 @@
             { teacher: "Beu", group: "D", times: [ { day: 2, start: "11:40", end: "13:10" }], students: ["Alle Sprachjongleure"] }
         ];
 
-        let nextSession = null;
-        let isOverviewShown = false;
-
         function checkSessionStatus() {
-            if (isOverviewShown) return;
-
             const now = new Date();
-            nextSession = null;
+            let currentSession = null;
+            let warningSession = null;
+            let nextSession = null;
 
             schedule.forEach(group => {
                 group.times.forEach(time => {
                     let sessionStart = new Date();
                     sessionStart.setDate(now.getDate() + ((time.day - now.getDay() + 7) % 7));
-                    let [startHours, startMinutes] = time.start.split(":").map(Number);
-                    sessionStart.setHours(startHours, startMinutes, 0);
+                    sessionStart.setHours(...time.start.split(":").map(Number));
 
-                    if (sessionStart > now && (!nextSession || sessionStart < nextSession.time)) {
-                        nextSession = { teacher: group.teacher, time: sessionStart, group: group.group, students: group.students };
+                    let sessionEnd = new Date(sessionStart);
+                    sessionEnd.setHours(...time.end.split(":").map(Number));
+
+                    let warningTime = new Date(sessionStart);
+                    warningTime.setMinutes(warningTime.getMinutes() - 15);
+
+                    if (now >= sessionStart && now <= sessionEnd) {
+                        currentSession = group;
+                    } else if (now >= warningTime && now < sessionStart) {
+                        warningSession = group;
+                    } else if (sessionStart > now && (!nextSession || sessionStart < nextSession.time)) {
+                        nextSession = { teacher: group.teacher, time: sessionStart, group: group.group };
                     }
                 });
             });
 
-            let displayDiv = document.getElementById("nextSessionDisplay");
-            let button = document.getElementById("nextSessionBtn");
+            if (currentSession) {
+                document.body.style.animation = "pulseRed 3s infinite";
+                document.getElementById("mainTitle").innerText = "Anschlussförderung aktiv 🔴";
+            } else if (warningSession) {
+                document.body.style.animation = "pulseYellow 3s infinite";
+                document.getElementById("mainTitle").innerText = "Achtung: Gleich Anschlussförderung ⚠️";
+            } else {
+                document.body.style.animation = "pulseGreen 3s infinite";
+                document.getElementById("mainTitle").innerText = "Keine Anschlussförderung ✅";
+            }
 
             if (nextSession) {
                 let formattedTime = nextSession.time.toLocaleString('de-DE', { weekday: 'long', hour: '2-digit', minute: '2-digit' });
-                
-                let nextSessionText = `<h2>Nächste AF</h2><p><strong>Gruppe:</strong> ${nextSession.group}</p><p><strong>Lehrkraft:</strong> ${nextSession.teacher}</p><p><strong>Zeit:</strong> ${formattedTime}</p>`;
-
-                button.innerText = `Nächste AF: ${formattedTime}`;
-                button.style.display = "block";
-
-                displayDiv.innerHTML = nextSessionText;
-                displayDiv.style.display = "block";
+                document.getElementById("nextSessionBtn").innerText = `Nächste AF: ${formattedTime} (Gruppe ${nextSession.group} - ${nextSession.teacher})`;
+                document.getElementById("nextSessionBtn").style.display = "block";
             } else {
-                button.style.display = "none";
-                displayDiv.style.display = "none";
+                document.getElementById("nextSessionBtn").style.display = "none";
             }
         }
 
-        function formatStudents(students) {
-            return "<h3>Schüler:innen</h3><ul>" + students.map(student => `<li>${student}</li>`).join("") + "</ul>";
-        }
-
-        function showNextSessionDetails() {
-            if (nextSession) {
-                let studentsHtml = formatStudents(nextSession.students);
-                document.getElementById("groupInfo").innerHTML = studentsHtml;
-            }
-        }
-
-        function toggleOverview() {
-            let groupInfo = document.getElementById("groupInfo");
-            let button = document.getElementById("overviewBtn");
-
-            if (isOverviewShown) {
-                isOverviewShown = false;
-                groupInfo.innerHTML = "";
-                button.innerText = "Übersicht";
-                checkSessionStatus();
-            } else {
-                isOverviewShown = true;
-                let overviewText = "<h2>Übersicht aller Gruppen</h2>";
-                schedule.forEach(group => {
-                    overviewText += `<h3>Gruppe ${group.group} (${group.teacher})</h3><ul>`;
-                    group.times.forEach(time => {
-                        const days = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-                        overviewText += `<li>${days[time.day]}: ${time.start} - ${time.end}</li>`;
-                    });
-                    overviewText += "</ul>";
-                });
-
-                groupInfo.innerHTML = overviewText;
-                button.innerText = "Zurück";
-            }
-        }
-
-        document.getElementById("nextSessionBtn").addEventListener("click", showNextSessionDetails);
-        document.getElementById("overviewBtn").addEventListener("click", toggleOverview);
+        document.getElementById("nextSessionBtn").addEventListener("click", () => alert("Schüler:innenliste wird hier angezeigt."));
         checkSessionStatus();
         setInterval(checkSessionStatus, 5000);
     </script>
