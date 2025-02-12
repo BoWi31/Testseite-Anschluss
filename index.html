@@ -19,16 +19,50 @@
 
         .btn { font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #007bff, #0056b3); color: white; border: none; padding: 12px; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 10px; cursor: pointer; transition: opacity 0.3s; }
         .btn:hover { opacity: 0.8; }
-        h1 { font-size: 24px; font-weight: bold; color: black; text-transform: uppercase; background-color: white; padding: 10px; border-radius: 10px; display: inline-block; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); max-width: 90%; }
-        #groupInfo { max-width: 90%; margin: auto; overflow-x: auto; text-align: left; }
-        #nextSessionDisplay { display: none; background-color: #fff3cd; color: #856404; padding: 10px; margin: 10px; border-radius: 10px; font-weight: bold; }
-        .button-container { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        
+        .box {
+            background-color: white;
+            padding: 15px;
+            margin: 10px auto;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        #groupInfo {
+            max-width: 90%;
+            margin: auto;
+            overflow-x: auto;
+            text-align: left;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1 id="mainTitle">Keine Anschlussförderung ✅</h1>
-    <div id="nextSessionDisplay"></div>
-    <div id="groupInfo"></div>
+    <div class="box">
+        <h1 id="mainTitle">Keine Anschlussförderung ✅</h1>
+    </div>
+    
+    <div class="box">
+        <div id="nextSessionDisplay"></div>
+    </div>
+    
+    <div class="box">
+        <div id="groupInfo"></div>
+    </div>
 
     <div class="button-container">
         <button id="nextSessionBtn" class="btn" style="display:none;"></button>
@@ -103,19 +137,7 @@
             return "<h3>Schüler:innen</h3><ul>" + students.map(student => `<li>${student}</li>`).join("") + "</ul>";
         }
 
-        function toggleView(mode) {
-            liveMode = !liveMode;
-            if (liveMode) {
-                checkSessionStatus();
-                document.getElementById(mode).innerText = mode === "nextSessionBtn" ? "Nächste AF" : "Übersicht";
-            } else {
-                document.getElementById("groupInfo").innerHTML = formatStudents(nextSession.students);
-                document.getElementById(mode).innerText = "Zurück";
-            }
-        }
-
-        document.getElementById("nextSessionBtn").addEventListener("click", () => toggleView("nextSessionBtn"));
-        document.getElementById("overviewBtn").addEventListener("click", () => toggleView("overviewBtn"));
+        document.getElementById("nextSessionBtn").addEventListener("click", () => alert("Schüler:innenliste wird hier angezeigt."));
         checkSessionStatus();
         setInterval(checkSessionStatus, 5000);
     </script>
