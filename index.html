@@ -83,16 +83,11 @@
             { teacher: "Beu", group: "D", times: [ { day: 2, start: "11:40", end: "13:10" }], students: ["Alle Sprachjongleure"] }
         ];
 
-        let liveMode = true;
-        let nextSession = null;
-
         function checkSessionStatus() {
-            if (!liveMode) return;
-
             const now = new Date();
             let currentSession = null;
             let warningSession = null;
-            nextSession = null;
+            let nextSession = null;
 
             schedule.forEach(group => {
                 group.times.forEach(time => {
@@ -123,7 +118,7 @@
             } else if (warningSession) {
                 document.body.style.animation = "pulseYellow 3s infinite";
                 document.getElementById("mainTitle").innerText = "Achtung: Gleich Anschlussförderung ⚠️";
-                document.getElementById("groupInfo").innerHTML = "";
+                document.getElementById("groupInfo").innerHTML = formatStudents(warningSession.students);
             } else {
                 document.body.style.animation = "pulseGreen 3s infinite";
                 document.getElementById("mainTitle").innerText = "Keine Anschlussförderung ✅";
