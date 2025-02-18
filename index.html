@@ -3,136 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keine Anschlussförderung</title>
+    <title>Anschlussförderung - Dashboard</title>
+    
+    <!-- Manifest für PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             text-align: center;
-            transition: background-color 1s ease-in-out;
             margin: 0;
-            padding: 10px;
-        }
-
-        @keyframes pulseGreen { 0% { background-color: #5cb85c; } 50% { background-color: #4cae4c; } 100% { background-color: #5cb85c; } }
-        @keyframes pulseYellow { 0% { background-color: #ffcc00; } 50% { background-color: #ffdb4d; } 100% { background-color: #ffcc00; } }
-        @keyframes pulseRed { 0% { background-color: #ff6961; } 50% { background-color: #ff8782; } 100% { background-color: #ff6961; } }
-
-        .btn { font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #007bff, #0056b3); color: white; border: none; padding: 12px; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 10px; cursor: pointer; transition: opacity 0.3s; }
-        .btn:hover { opacity: 0.8; }
-        
-        .box {
-            background-color: white;
-            padding: 15px;
-            margin: 10px auto;
-            border-radius: 10px;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-            max-width: 90%;
-            text-align: center;
+            padding: 20px;
+            transition: background-color 0.5s ease-in-out;
+            background: linear-gradient(180deg, #4CAF50, #388E3C);
+            color: white;
         }
 
         h1 {
             font-size: 24px;
             font-weight: bold;
             text-transform: uppercase;
+            margin-bottom: 10px;
         }
 
-        #groupInfo {
+        #clock {
+            font-size: 24px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .box {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            margin: 10px auto;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
             max-width: 90%;
-            margin: auto;
-            overflow-x: auto;
-            text-align: left;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            transition: transform 0.3s ease-in-out;
         }
 
-        .button-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
+        .box:hover {
+            transform: scale(1.02);
+        }
+
+        .hidden { display: none; }
+        .countdown { font-size: 20px; font-weight: bold; margin-top: 10px; }
+
+        #installBtn {
+            display: none;
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
     <div class="box">
         <h1 id="mainTitle">Keine Anschlussförderung ✅</h1>
-    </div>
-    
-    <div class="box">
-        <div id="nextSessionDisplay"></div>
-    </div>
-    
-    <div class="box">
-        <div id="groupInfo"></div>
+        <p id="dayDisplay"></p>
     </div>
 
-    <div class="button-container">
-        <button id="nextSessionBtn" class="btn" style="display:none;"></button>
-        <button id="overviewBtn" class="btn">Übersicht</button>
+    <div id="clock">--:--:--</div>
+
+    <div class="box hidden" id="groupInfoBox">
+        <h3 id="groupTitle"></h3>
+        <p id="studentList"></p>
+        <p class="countdown hidden" id="countdown"></p>
     </div>
+
+    <button id="installBtn">App installieren</button>
+
+    <audio id="alertSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
 
     <script>
         const schedule = [
-            { teacher: "Woi", group: "C", times: [ { day: 1, start: "08:00", end: "09:30" }, { day: 3, start: "09:50", end: "11:20" }, { day: 5, start: "09:50", end: "11:20" }], 
+            { teacher: "Woi", group: "C", times: [{ day: 1, start: "08:00", end: "09:30" }, { day: 3, start: "09:50", end: "11:20" }, { day: 5, start: "09:50", end: "11:20" }], 
               students: ["Maja (6a)", "Tymofii (7.2)", "Emma (7.2)", "Ilyas (7.2)", "Ili (7.2)", "Sofia (7a)"] },
 
-            { teacher: "Can", group: "A", times: [ { day: 1, start: "09:50", end: "11:20" }, { day: 3, start: "11:40", end: "13:10" }, { day: 4, start: "09:50", end: "11:20" }], 
-              students: ["Alina (5.1)", "Daniil (6.1)", "Mohammed L. (6.1)", "Evelina (7.1)", "Beyar (7.2)", "Artur (7.2)", "Bahar (7a)"] },
+            { teacher: "Can", group: "A", times: [{ day: 1, start: "09:50", end: "11:20" }, { day: 3, start: "08:00", end: "09:30" }, { day: 4, start: "09:50", end: "11:20" }], 
+              students: ["Daniil (6.1)", "Mohammed L. (6.1)", "Evelina (7.1)", "Beyar (7.2)", "Artur (7.2)", "Bahar (7a)"] },
 
-            { teacher: "Tun", group: "B", times: [ { day: 2, start: "09:50", end: "11:20" }, { day: 4, start: "08:00", end: "09:30" }, { day: 5, start: "08:00", end: "09:30" }], 
-              students: ["Anastasia (5a)", "Krisztian (6.1)", "Selena (6a)", "Arzoo (7.1)", "Marin (7.1)", "Mohammed H. (7.1)"] },
+            { teacher: "Tun", group: "B", times: [{ day: 2, start: "09:50", end: "11:20" }], 
+              students: ["Anastasia (5a)", "Krisztian (6.1)", "Selena (6a)", "Arzoo (7.1)", "Marin (7.1)", "Mohammed H. (7.1)", "Veysel (7.1)"] },
 
-            { teacher: "Beu", group: "D", times: [ { day: 2, start: "11:40", end: "13:10" }], students: ["Alle Sprachjongleure"] }
+            { teacher: "Beu", group: "D", times: [{ day: 2, start: "11:40", end: "13:10" }], 
+              students: ["Alle Sprachjongleure"] }
         ];
 
-        let nextSession = null;
-
-        function checkSessionStatus() {
+        function updateDisplay() {
             const now = new Date();
-            let currentSession = null;
-            let warningSession = null;
+            document.getElementById("dayDisplay").innerText = now.toLocaleDateString("de-DE");
+
+            let today = now.getDay();
+            let nextSession = null;
 
             schedule.forEach(group => {
                 group.times.forEach(time => {
-                    let sessionStart = new Date();
-                    sessionStart.setDate(now.getDate() + ((time.day - now.getDay() + 7) % 7));
-                    sessionStart.setHours(...time.start.split(":").map(Number));
+                    if (time.day !== today) return;
 
-                    let sessionEnd = new Date(sessionStart);
-                    sessionEnd.setHours(...time.end.split(":").map(Number));
+                    let sessionStart = new Date(now);
+                    sessionStart.setHours(...time.start.split(":").map(Number), 0, 0);
 
-                    let warningTime = new Date(sessionStart);
-                    warningTime.setMinutes(warningTime.getMinutes() - 15);
+                    let timeDiff = Math.round((sessionStart - now) / 60000);
 
-                    if (now >= sessionStart && now <= sessionEnd) {
-                        currentSession = group;
-                    } else if (now >= warningTime && now < sessionStart) {
-                        warningSession = group;
-                    } else if (!nextSession || sessionStart < nextSession.time) {
-                        nextSession = { teacher: group.teacher, time: sessionStart, group: group.group, students: group.students };
+                    if (!nextSession && timeDiff > 0 && timeDiff <= 15) {
+                        nextSession = { teacher: group.teacher, group: group.group, timeDiff, students: group.students };
                     }
                 });
             });
 
-            document.body.style.animation = currentSession ? "pulseRed 3s infinite" : warningSession ? "pulseYellow 3s infinite" : "pulseGreen 3s infinite";
-            document.getElementById("mainTitle").innerText = currentSession ? "Anschlussförderung aktiv 🔴" : warningSession ? "Achtung: Gleich Anschlussförderung ⚠️" : "Keine Anschlussförderung ✅";
-            document.getElementById("groupInfo").innerHTML = currentSession ? formatStudents(currentSession.students) : warningSession ? formatStudents(warningSession.students) : "";
+            let title = document.getElementById("mainTitle");
+            let studentList = document.getElementById("studentList");
+            let countdown = document.getElementById("countdown");
 
-            document.getElementById("nextSessionBtn").innerText = nextSession ? `Nächste AF: ${nextSession.time.toLocaleString('de-DE', { weekday: 'long', hour: '2-digit', minute: '2-digit' })} - Gruppe ${nextSession.group} (${nextSession.teacher})` : "";
-            document.getElementById("nextSessionBtn").style.display = nextSession ? "block" : "none";
+            if (nextSession) {
+                document.body.style.background = "linear-gradient(180deg, #FFD700, #FFA500)";
+                title.innerText = `Achtung! Gruppe ${nextSession.group} (${nextSession.teacher}) beginnt in ${nextSession.timeDiff} Minuten ⚠️`;
+                studentList.innerHTML = nextSession.students.join(", ");
+                countdown.classList.remove("hidden");
+
+                if (nextSession.timeDiff === 15) {
+                    document.getElementById("alertSound").play();
+                }
+            } else {
+                document.body.style.background = "linear-gradient(180deg, #4CAF50, #388E3C)";
+                title.innerText = "Keine Anschlussförderung ✅";
+                countdown.classList.add("hidden");
+            }
         }
 
-        function formatStudents(students) {
-            return "<h3>Schüler:innen</h3><ul>" + students.map(student => `<li>${student}</li>`).join("") + "</ul>";
-        }
+        setInterval(updateDisplay, 30000);
+        updateDisplay();
 
-        function showOverview() {
-            let overviewText = "<h2>Gruppen & Schüler:innen</h2>";
-            schedule.forEach(group => overviewText += `<h3>Gruppe ${group.group} (${group.teacher})</h3>` + formatStudents(group.students));
-            document.getElementById("groupInfo").innerHTML = overviewText;
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js")
+                .then(() => console.log("Service Worker registriert!"))
+                .catch(error => console.log("Service Worker Fehler:", error));
         }
-
-        document.getElementById("overviewBtn").addEventListener("click", showOverview);
-        checkSessionStatus();
-        setInterval(checkSessionStatus, 5000);
     </script>
+
+    <p>(Stand: 17.02.2025)</p>
 </body>
 </html>
