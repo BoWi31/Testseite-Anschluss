@@ -40,40 +40,76 @@
       .countdown{ font-size:18px; }
     }
     #footer{ margin-top:20px; font-size:14px; opacity:0.8; }
+    /* Button */
+    #toggleBtn{
+      margin: 6px 0 14px 0;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow:0 4px 8px rgba(0,0,0,0.25);
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      transition: transform 0.15s ease, background 0.3s ease;
+    }
+    #toggleBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.3); }
+    #toggleBtn:active{ transform: translateY(0); }
+    .group-header{ font-size:18px; font-weight:bold; margin: 8px 0 6px; }
+    .time-chip{
+      display:inline-block; margin: 2px 4px; padding: 6px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.18); font-size:14px;
+    }
+    .subtle{ opacity:0.9; }
   </style>
 </head>
 <body id="pageBody">
-  <div class="box">
-    <h1 id="mainTitle">Keine Anschlussförderung ✅</h1>
-    <p id="dayDisplay"></p>
+  <!-- STATUS-VIEW -->
+  <div id="statusView">
+    <div class="box">
+      <h1 id="mainTitle">Keine Anschlussförderung ✅</h1>
+      <p id="dayDisplay"></p>
+    </div>
+
+    <button id="toggleBtn" aria-pressed="false" aria-controls="overviewView">SuS & Gruppen (Termine)</button>
+
+    <div id="clock">--:--:--</div>
+
+    <div class="box hidden" id="groupInfoBox">
+      <h3 id="groupTitle"></h3>
+      <div id="groupInfo"></div>
+      <p class="countdown hidden" id="countdown"></p>
+    </div>
   </div>
 
-  <div id="clock">--:--:--</div>
-
-  <div class="box hidden" id="groupInfoBox">
-    <h3 id="groupTitle"></h3>
-    <div id="groupInfo"></div>
-    <p class="countdown hidden" id="countdown"></p>
+  <!-- OVERVIEW-VIEW (ohne Lehrkräfte) -->
+  <div id="overviewView" class="hidden" aria-live="polite">
+    <div class="box">
+      <h2>Übersicht – Gruppen, SuS & Termine</h2>
+      <p class="subtle">Lehrkräfte werden hier nicht angezeigt.</p>
+      <div id="overviewContent"></div>
+    </div>
+    <button id="toggleBtnBack" aria-pressed="true" aria-controls="statusView">Zurück zum Status</button>
   </div>
 
   <audio id="alertSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
 
   <script>
-    // ---------------------------
-    // Daten: 2 Gruppen (neu)
+    // ==========================================================
+    // Gruppen-Daten (SuS + planmäßige Termine der Anschlussförderung)
     // Wochentage: So=0, Mo=1, Di=2, Mi=3, Do=4, Fr=5, Sa=6
-    // Zeiten im Format HH:MM
-    // ---------------------------
+    // Zeiten: HH:MM
+    // ==========================================================
     const schedule = [
       {
-        teacher: "Team 1", group: "1",
+        group: "1",
         times: [
-          { day: 2, start: "09:50", end: "11:20" }, // Dienstag 3./4.
-          { day: 3, start: "09:50", end: "11:20" }, // Mittwoch 3./4.
-          { day: 3, start: "11:40", end: "13:10" }, // Mittwoch 5./6.
-          { day: 4, start: "11:40", end: "13:10" }, // Donnerstag 5./6.
-          { day: 5, start: "07:40", end: "09:30" }, // Freitag 1./2.
-          { day: 5, start: "11:40", end: "13:10" }  // Freitag 5./6.
+          { day: 2, start: "09:50", end: "11:20" }, // Di 3./4.
+          { day: 3, start: "09:50", end: "11:20" }, // Mi 3./4.
+          { day: 3, start: "11:40", end: "13:10" }, // Mi 5./6.
+          { day: 4, start: "11:40", end: "13:10" }, // Do 5./6.
+          { day: 5, start: "07:40", end: "09:30" }, // Fr 1./2.
+          { day: 5, start: "11:40", end: "13:10" }  // Fr 5./6.
         ],
         students: [
           "Mohammed A. (8.1)", "Evelina (8.1)", "Mohammed H. (8.1)", "Veysel (8.1)",
@@ -81,11 +117,11 @@
         ]
       },
       {
-        teacher: "Team 2", group: "2",
+        group: "2",
         times: [
-          { day: 1, start: "09:50", end: "11:20" }, // Montag 3./4.
-          { day: 2, start: "07:40", end: "09:30" }, // Dienstag 1./2.
-          { day: 5, start: "09:50", end: "11:20" }  // Freitag 3./4.
+          { day: 1, start: "09:50", end: "11:20" }, // Mo 3./4.
+          { day: 2, start: "07:40", end: "09:30" }, // Di 1./2.
+          { day: 5, start: "09:50", end: "11:20" }  // Fr 3./4.
         ],
         students: [
           "Bahar (8a)", "Violetta (8a)", "Justina (8a)", "Stasia (8a)",
@@ -94,15 +130,75 @@
       }
     ];
 
-    const dayNames = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+    // ==========================================================
+    // Lehrkräfte-Termine (slotgenau; nur passende AF-Slots werden zugeordnet)
+    // (Für die Übersicht irrelevant; nur Status nutzt sie)
+    // Eingabe:
+    // Lun (Mo 5./6, Mi 1./2) | Kue (Di 3./4., Mi 5./6., Do 3./4.)
+    // Bas (Di 5./6., Do 5./6., Fr 5./6) | Har (Do 1./2.)
+    //
+    // Passende Zuordnung zu AF-Slots:
+    // - Kue: Di 3./4. (Gr.1), Mi 5./6. (Gr.1)
+    // - Bas: Do 5./6. (Gr.1), Fr 5./6. (Gr.1)
+    // - Lun: Mo 5./6., Mi 1./2. -> kein AF-Slot vorhanden (ignoriert)
+    // - Har: Do 1./2. -> kein AF-Slot vorhanden (ignoriert)
+    // ==========================================================
+    const teacherAssignments = [
+      { teacher: "Lun", slots: [
+        { day: 1, start: "11:40", end: "13:10" }, // Mo 5./6. (kein AF-Slot)
+        { day: 3, start: "07:40", end: "09:30" }  // Mi 1./2. (kein AF-Slot)
+      ]},
+      { teacher: "Kue", slots: [
+        { day: 2, start: "09:50", end: "11:20" }, // Di 3./4. -> Gr.1 vorhanden
+        { day: 3, start: "11:40", end: "13:10" }, // Mi 5./6. -> Gr.1 vorhanden
+        { day: 4, start: "09:50", end: "11:20" }  // Do 3./4. (kein AF-Slot)
+      ]},
+      { teacher: "Bas", slots: [
+        { day: 2, start: "11:40", end: "13:10" }, // Di 5./6. (kein AF-Slot)
+        { day: 4, start: "11:40", end: "13:10" }, // Do 5./6. -> Gr.1 vorhanden
+        { day: 5, start: "11:40", end: "13:10" }  // Fr 5./6. -> Gr.1 vorhanden
+      ]},
+      { teacher: "Har", slots: [
+        { day: 4, start: "07:40", end: "09:30" }  // Do 1./2. (kein AF-Slot)
+      ]}
+    ];
 
+    const dayNames = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+    const slotTeacherMap = new Map();
     let lastFiveMinuteAlertKey = null; // verhindert Mehrfach-Alarm
+    let isOverview = false;
+
+    // Map für Lehrkräfte je Slot nur auf valide AF-Slots
+    (function buildTeacherMap(){
+      const allValidSlots = new Set();
+      schedule.forEach(g => {
+        g.times.forEach(t => {
+          allValidSlots.add(`${t.day}|${t.start}|${t.end}`);
+        });
+      });
+
+      teacherAssignments.forEach(entry => {
+        entry.slots.forEach(slot => {
+          const key = `${slot.day}|${slot.start}|${slot.end}`;
+          if (allValidSlots.has(key)){
+            if (!slotTeacherMap.has(key)){
+              slotTeacherMap.set(key, entry.teacher);
+            } else {
+              console.warn(`Doppelbelegung erkannt für Slot ${key}: ${slotTeacherMap.get(key)} + ${entry.teacher} – erste Eintragung bleibt bestehen.`);
+            }
+          } else {
+            console.warn(`Kein AF-Termin für Lehrkraft-Slot: ${entry.teacher} @ ${key} (ignoriert).`);
+          }
+        });
+      });
+    })();
 
     function updateClock(){
       document.getElementById("clock").innerText = new Date().toLocaleTimeString("de-DE");
     }
 
     function updateDisplay(){
+      if (isOverview) return; // im Übersichtmodus Status nicht rendern
       const now = new Date();
       document.getElementById("dayDisplay").innerText =
         `${dayNames[now.getDay()]}, ${now.toLocaleDateString("de-DE")}`;
@@ -111,7 +207,7 @@
       let activeSession = null;
       const futureSessions = [];
 
-      // Aktive und zukünftige (heutige) Sessions sammeln
+      // Aktive & zukünftige (heutige) Sessions sammeln
       schedule.forEach(group => {
         group.times.forEach(time => {
           if (time.day !== today) return;
@@ -124,15 +220,22 @@
           sessionStart.setHours(sH, sM, 0, 0);
           sessionEnd.setHours(eH, eM, 0, 0);
 
+          const key = `${time.day}|${time.start}|${time.end}`;
+          const teacher = slotTeacherMap.get(key) || "—";
+
           if (now >= sessionStart && now <= sessionEnd) {
             activeSession = {
-              teacher: group.teacher, group: group.group,
-              students: group.students, start: sessionStart, end: sessionEnd
+              group: group.group,
+              students: group.students,
+              start: sessionStart, end: sessionEnd,
+              teacher
             };
           } else if (sessionStart > now) {
             futureSessions.push({
-              teacher: group.teacher, group: group.group,
-              students: group.students, time: sessionStart, end: sessionEnd
+              group: group.group,
+              students: group.students,
+              time: sessionStart, end: sessionEnd,
+              teacher
             });
           }
         });
@@ -150,7 +253,7 @@
       if (activeSession){
         document.body.style.background = "linear-gradient(180deg, #D32F2F, #B71C1C)";
         title.innerText = "Anschlussförderung aktiv ❌";
-        groupTitle.innerText = `Gruppe ${activeSession.group} (${activeSession.teacher})`;
+        groupTitle.innerText = `Gruppe ${activeSession.group} – ${activeSession.teacher}`;
         groupInfo.innerHTML = `<p class="left-align">${activeSession.students.join("<br>")}</p>`;
         countdown.classList.add("hidden");
         groupInfoBox.classList.remove("hidden");
@@ -161,7 +264,7 @@
 
         document.body.style.background = "linear-gradient(180deg, #FFD700, #FFA500)";
         title.innerText = "Achtung! Gleich Anschlussförderung ⚠️";
-        groupTitle.innerText = `Gruppe ${nextSession.group} (${nextSession.teacher})`;
+        groupTitle.innerText = `Gruppe ${nextSession.group} – ${nextSession.teacher}`;
         groupInfo.innerHTML = `<p class="left-align">${nextSession.students.join("<br>")}</p>`;
 
         countdown.innerText = minutes > 0
@@ -187,15 +290,80 @@
       }
     }
 
-    // Start: Uhr und Anzeige sofort setzen, dann Intervalle
+    // -------- Übersicht (ohne Lehrkräfte) --------
+    function renderOverview(){
+      const container = document.getElementById("overviewContent");
+      container.innerHTML = "";
+
+      // Gruppen sortiert nach Nummer
+      const groupsSorted = [...schedule].sort((a,b) => (a.group+"").localeCompare(b.group+"", 'de', {numeric:true}));
+
+      groupsSorted.forEach(g => {
+        // Zeiten deduplizieren & sortieren
+        const timeKeys = new Set();
+        g.times.forEach(t => timeKeys.add(`${t.day}|${t.start}|${t.end}`));
+        const times = Array.from(timeKeys).map(k => {
+          const [day,start,end] = k.split("|");
+          return { day: Number(day), start, end };
+        }).sort((a,b) => a.day !== b.day
+          ? a.day - b.day
+          : a.start.localeCompare(b.start)
+        );
+
+        const box = document.createElement("div");
+        box.className = "box";
+        const title = document.createElement("div");
+        title.className = "group-header";
+        title.textContent = `Gruppe ${g.group}`;
+        const students = document.createElement("div");
+        students.className = "left-align";
+        students.innerHTML = `<strong>SuS:</strong><br>${g.students.join("<br>")}`;
+
+        const timesWrap = document.createElement("div");
+        timesWrap.style.marginTop = "8px";
+        timesWrap.className = "left-align";
+        const chips = times.map(t => {
+          const label = `${dayNames[t.day]} ${t.start}–${t.end}`;
+          return `<span class="time-chip">${label}</span>`;
+        }).join(" ");
+        timesWrap.innerHTML = `<strong>Termine:</strong><br>${chips}`;
+
+        box.appendChild(title);
+        box.appendChild(students);
+        box.appendChild(timesWrap);
+        container.appendChild(box);
+      });
+    }
+
+    function showOverview(){
+      isOverview = true;
+      document.getElementById("statusView").classList.add("hidden");
+      document.getElementById("overviewView").classList.remove("hidden");
+      document.getElementById("toggleBtn").setAttribute("aria-pressed","true");
+      renderOverview();
+    }
+
+    function showStatus(){
+      isOverview = false;
+      document.getElementById("overviewView").classList.add("hidden");
+      document.getElementById("statusView").classList.remove("hidden");
+      document.getElementById("toggleBtn").setAttribute("aria-pressed","false");
+      updateDisplay(); // sofort Status aktualisieren
+    }
+
+    // Buttons
+    document.addEventListener("DOMContentLoaded", () => {
+      const btn = document.getElementById("toggleBtn");
+      const btnBack = document.getElementById("toggleBtnBack");
+      btn.addEventListener("click", showOverview);
+      btnBack.addEventListener("click", showStatus);
+    });
+
+    // Start: Uhr & Anzeige initial setzen, dann Intervalle
     updateClock();
     updateDisplay();
-
-    // Uhr jede Sekunde
-    setInterval(updateClock, 1000);
-
-    // Anzeige: jede Sekunde (präziser Countdown & zuverlässige Statuswechsel)
-    setInterval(updateDisplay, 1000);
+    setInterval(updateClock, 1000);   // Uhr jede Sekunde
+    setInterval(updateDisplay, 1000); // Anzeige jede Sekunde (präziser Countdown)
   </script>
 
   <p id="footer">(Stand: 22.08.2025)</p>
